@@ -1,0 +1,103 @@
+<html>
+    <head>
+        <title>Nation</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.5.1/knockout-latest.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"/>
+    </head>
+    <body>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th class="align-middle">
+                        <button class="btn btn-primary" data-bind="click: function() {filtering(!filtering())}">
+                            <i class="fa fa-fw fa-filter" title="Filter"></i>
+                        </button>
+                    </th>
+                    <th class="align-middle">Continent</th>
+                    <th class="align-middle">Year</th>
+                    <th class="align-middle">Population</th>
+                    <th class="align-middle">
+                        <a role="button" data-bind="click: function() {gdp_order(gdp_order() == 'DESC' ? 'ASC' : 'DESC')}">
+                            GDP <i class="fa fa-fw" data-bind="css: {'fa-caret-up': gdp_order() == 'ASC', 'fa-caret-down': gdp_order() == 'DESC'}"></i> 
+                        </a>
+                    </th>
+                <tr>
+                <tr data-bind="visible: filtering()">
+                    <td class="align-middle">
+                        <button class="btn btn-default" data-bind="click: get">
+                            <i class="fa fa-fw fa-search" title="Search"></i>
+                        </button>
+                    </td>
+                    <td class="align-middle">
+                        <select class="form-control" data-bind="options: continents, optionsValue: 'id', optionsText: 'name', value: continent, optionsCaption: ''"></select>
+                    </td>
+                    <td class="align-middle">
+                        <div class="input-group">
+                            <input type="number" class="form-control-sm" data-bind="value: year" /> 
+                            <span class="input-group-text" data-bind="if: year()"> - <span data-bind="text: year2"></span></span>
+                        </div>
+                    </td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: stats">
+                <tr>
+                    <td></td>
+                    <td class="align-middle" data-bind="text: name"></td>
+                    <td class="align-middle">
+                        <span data-bind="text: $root.year"></span> - <span data-bind="text: $root.year2"></span>
+                    </td>
+                    <td class="align-middle" data-bind="text: population_sum"></td>
+                    <td class="align-middle" data-bind="text: gdp_sum"></td>
+                </tr>
+            </tbody>
+        </table>
+    </body>
+    <script>
+        var url = 'http://localhost/nation/php/';
+        var continentStats = new ContinentStats();
+        
+        
+        
+        function ContinentStats() {
+            var self = this;
+            this.stats = ko.observableArray([]);
+            this.continents = ko.observableArray([]);
+            this.continent = ko.observable(0); 
+            this.year = ko.observable(1990);
+            this.year2 = ko.pureComputed(function() {
+                return Number(self.year()) + 10;
+            });
+            this.gdp_order = ko.observable('DESC');
+            this.filtering = ko.observable(false);
+            $.get(url + 'continents.php', function(data, status) {
+                self.continents(JSON.parse(data));
+            });
+            this.continent.subscribe(function() {
+                self.get();
+            });
+            this.year.subscribe(function() {
+                self.get();
+            });
+            this.gdp_order.subscribe(function() {
+                self.get();
+            });
+            this.get = function() {
+                var continent = self.continent() ? self.continent() : 0;
+                $.get(url + 'get.php?continent=' + continent + '&year=' + self.year() + '&gdp_order=' + self.gdp_order(), function(data, status) {
+                    self.stats(JSON.parse(data));
+                });
+            };
+            this.get();
+            
+        }
+        
+        ko.applyBindings(new ContinentStats());
+        
+    </script>
+</html>
